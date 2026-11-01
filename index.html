@@ -1,0 +1,717 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Jogging Mathématique - Dojo des Stratégies</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Police lisible et stylisée -->
+    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;700;900&display=swap" rel="stylesheet">
+    <!-- Tone.js pour la génération de sons -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.js"></script>
+
+    <style>
+        :root {
+            /* Palette Ninja / Dojo */
+            --ninja-dark: #0f172a;
+            --ninja-red: #e11d48;
+            --ninja-dark-red: #9f1239;
+            --ninja-gold: #fbbf24;
+            --ninja-green: #10b981;
+            --ninja-blue: #3b82f6;
+            --bg-color: #f8fafc;
+        }
+
+        body {
+            font-family: 'Nunito', sans-serif;
+            background-color: var(--bg-color);
+            background-image: 
+                radial-gradient(#cbd5e1 2px, transparent 2px),
+                radial-gradient(#cbd5e1 2px, transparent 2px);
+            background-size: 40px 40px;
+            background-position: 0 0, 20px 20px;
+            overflow-x: hidden;
+            touch-action: manipulation;
+            user-select: none;
+        }
+
+        /* Panneaux avec style asiatique / brutalisme */
+        .ninja-panel {
+            background-color: #ffffff;
+            border: 5px solid var(--ninja-dark);
+            border-radius: 20px;
+            box-shadow: 8px 8px 0 var(--ninja-red);
+            color: var(--ninja-dark);
+            position: relative;
+        }
+
+        .game-btn {
+            background-color: #ffffff;
+            color: var(--ninja-dark);
+            border: 4px solid var(--ninja-dark);
+            border-radius: 16px;
+            padding: 1.2rem;
+            font-size: 1.4rem;
+            font-weight: 900;
+            cursor: pointer;
+            box-shadow: 0 6px 0 var(--ninja-dark);
+            transition: all 0.15s ease;
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: flex-start;
+            text-align: left;
+            min-height: 85px;
+        }
+
+        .game-btn:active, .game-btn.pressed {
+            transform: translateY(6px);
+            box-shadow: 0 0px 0 var(--ninja-dark);
+        }
+
+        .game-btn:hover:not(:disabled) {
+            background-color: #fef3c7; /* Jaune très doux */
+            border-color: var(--ninja-red);
+        }
+
+        .game-btn:disabled {
+            cursor: not-allowed;
+            opacity: 0.95;
+        }
+
+        /* États de réponses */
+        .btn-correct {
+            background-color: var(--ninja-green) !important;
+            color: white !important;
+            animation: pulse-green 0.5s ease;
+            border-color: #047857 !important;
+            box-shadow: 0 6px 0 #047857 !important;
+        }
+
+        .btn-wrong {
+            background-color: var(--ninja-red) !important;
+            color: white !important;
+            animation: shake 0.4s ease;
+            border-color: var(--ninja-dark-red) !important;
+            box-shadow: 0 6px 0 var(--ninja-dark-red) !important;
+        }
+
+        .choice-letter {
+            background-color: #f1f5f9;
+            border: 3px solid var(--ninja-dark);
+            border-radius: 10px;
+            width: 45px;
+            height: 45px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-right: 18px;
+            font-size: 1.4rem;
+            flex-shrink: 0;
+            box-shadow: 2px 2px 0 var(--ninja-dark);
+            color: var(--ninja-dark);
+        }
+
+        .game-btn.btn-correct .choice-letter, .game-btn.btn-wrong .choice-letter {
+            background-color: white;
+            color: var(--ninja-dark);
+        }
+
+        /* Animations */
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            20% { transform: translateX(-8px); }
+            40% { transform: translateX(8px); }
+            60% { transform: translateX(-8px); }
+            80% { transform: translateX(8px); }
+        }
+
+        @keyframes pulse-green {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.03); }
+            100% { transform: scale(1); }
+        }
+        
+        @keyframes slide-up {
+            0% { transform: translateY(20px); opacity: 0; }
+            100% { transform: translateY(0); opacity: 1; }
+        }
+
+        .slide-up-anim {
+            animation: slide-up 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+        }
+
+        .svg-container {
+            width: 100%;
+            max-width: 450px;
+            height: 160px;
+            margin: 0 auto;
+            background: #ffffff;
+            border: 4px solid var(--ninja-dark);
+            border-radius: 16px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 10px;
+            box-shadow: inset 0 4px 10px rgba(0,0,0,0.1);
+        }
+
+        .progress-bar {
+            height: 20px;
+            background-color: #e2e8f0;
+            border-radius: 10px;
+            overflow: hidden;
+            border: 3px solid var(--ninja-dark);
+            position: relative;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, var(--ninja-gold), var(--ninja-red));
+            width: 0%;
+            transition: width 0.4s ease-out;
+            border-right: 3px solid var(--ninja-dark);
+        }
+
+        #custom-modal {
+            background: rgba(15, 23, 42, 0.75);
+            backdrop-filter: blur(4px);
+        }
+
+        #confetti-canvas {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            pointer-events: none;
+            z-index: 100;
+        }
+        
+        .math-text {
+            font-weight: 900;
+            fill: var(--ninja-dark);
+            font-family: 'Nunito', sans-serif;
+        }
+
+        /* Style spécifique pour le panneau de stratégie */
+        #strategy-panel {
+            background-color: #f0fdf4;
+            border: 4px solid var(--ninja-green);
+            box-shadow: 4px 6px 0 #047857;
+            display: none; /* Caché par défaut */
+        }
+        #strategy-panel.show {
+            display: block;
+            animation: slide-up 0.5s ease forwards;
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col">
+
+    <canvas id="confetti-canvas"></canvas>
+
+    <!-- ÉCRAN D'ACCUEIL -->
+    <div id="start-screen" class="flex-1 flex flex-col justify-center items-center p-4 z-10 absolute inset-0 bg-[#f8fafc]">
+        <div class="ninja-panel p-8 md:p-12 text-center max-w-2xl w-full slide-up-anim">
+            <div class="text-7xl mb-6">🥷⛩️🧠</div>
+            <h1 class="text-4xl md:text-5xl font-black mb-6 text-slate-800 tracking-tight uppercase">
+                Dojo des Stratégies
+            </h1>
+            <p class="text-lg md:text-xl font-bold mb-8 text-slate-600 leading-relaxed">
+                Apprends les secrets du calcul mental ! Addition, soustraction (< 100) et tables de multiplication (1 à 7).<br>
+                <span class="text-rose-600">Après chaque réponse, le Maître t'enseignera une technique.</span>
+            </p>
+            <button onclick="startGame()" class="game-btn w-full text-2xl !bg-rose-600 hover:!bg-rose-500 !text-white !border-slate-900 justify-center mx-auto shadow-[0_6px_0_#0f172a]">
+                ENTRER DANS LE DOJO ▶️
+            </button>
+        </div>
+    </div>
+
+    <!-- ÉCRAN DE JEU -->
+    <div id="game-screen" class="hidden flex-1 flex flex-col p-3 sm:p-5 max-w-4xl mx-auto w-full z-10">
+        
+        <header class="flex justify-between items-center bg-white rounded-2xl p-4 mb-5 border-4 border-slate-900 shadow-[4px_4px_0_rgba(225,29,72,1)]">
+            <div class="flex items-center gap-3">
+                <span class="text-4xl">⭐</span>
+                <div class="text-3xl font-black text-slate-800" id="score-display">0</div>
+            </div>
+            <div class="flex-1 mx-4 max-w-md">
+                <div class="text-sm font-bold text-slate-600 text-center mb-2 uppercase tracking-widest">Défi <span id="question-number">1</span> / 20</div>
+                <div class="progress-bar">
+                    <div class="progress-fill" id="progress-bar"></div>
+                </div>
+            </div>
+            <button onclick="toggleSound()" id="sound-btn" class="text-4xl hover:scale-110 transition-transform">
+                🔊
+            </button>
+        </header>
+
+        <main class="flex-1 flex flex-col relative">
+            <div class="ninja-panel p-6 sm:p-8 mb-6 slide-up-anim" id="question-panel">
+                <h2 id="question-text" class="text-2xl sm:text-3xl font-black text-center mb-6 text-slate-900 leading-snug">
+                    Chargement...
+                </h2>
+                
+                <div id="visual-container" class="svg-container mb-6 bg-slate-50">
+                    <!-- SVG injecté ici -->
+                </div>
+
+                <div class="flex justify-center">
+                    <button onclick="showHint()" class="game-btn !min-h-0 !py-2 !px-6 !text-lg !bg-sky-100 hover:!bg-sky-200 !border-slate-900 flex items-center gap-2 !shadow-[0_4px_0_#0f172a]">
+                        💡 Besoin d'aide avant de répondre ?
+                    </button>
+                </div>
+            </div>
+
+            <!-- Grille de réponses -->
+            <div id="answers-grid" class="grid grid-cols-1 sm:grid-cols-2 gap-4 pb-6">
+                <!-- Boutons générés dynamiquement -->
+            </div>
+
+            <!-- PANNEAU DE STRATÉGIE (Caché au début, apparaît après la réponse) -->
+            <div id="strategy-panel" class="rounded-2xl p-6 sm:p-8 mb-8 relative">
+                <div class="absolute -top-6 left-1/2 transform -translate-x-1/2 text-5xl">🥷</div>
+                <h3 class="text-2xl font-black text-emerald-800 text-center mt-2 mb-4 uppercase">Le Secret du Maître</h3>
+                <p id="strategy-text" class="text-xl font-bold text-emerald-900 text-center mb-6 leading-relaxed">
+                    Explication de la stratégie ici.
+                </p>
+                <button onclick="nextQuestion()" class="game-btn w-full !min-h-[60px] !bg-emerald-500 hover:!bg-emerald-400 !text-white !border-emerald-900 justify-center shadow-[0_5px_0_#064e3b]">
+                    Défi Suivant ➔
+                </button>
+            </div>
+        </main>
+    </div>
+
+    <!-- ÉCRAN DE FIN -->
+    <div id="end-screen" class="hidden flex-1 flex flex-col justify-center items-center p-4 z-10 absolute inset-0 bg-[#f8fafc]/95 backdrop-blur-sm">
+        <div class="ninja-panel p-10 text-center max-w-xl w-full slide-up-anim">
+            <h1 class="text-5xl font-black mb-6 text-slate-800 uppercase">Ceinture Noire !</h1>
+            <div id="stars-container" class="text-7xl mb-8 flex justify-center gap-3"></div>
+            <p class="text-2xl font-bold text-slate-500 mb-2">Score Final</p>
+            <p id="final-score" class="text-rose-600 text-6xl font-black mb-6"></p>
+            <p id="feedback-msg" class="text-xl text-slate-700 mb-10 font-bold leading-relaxed"></p>
+            
+            <button onclick="location.reload()" class="game-btn w-full text-2xl !bg-sky-500 hover:!bg-sky-400 !text-white !border-slate-900 justify-center mx-auto shadow-[0_6px_0_#0f172a]">
+                Nouvel Entraînement 🔄
+            </button>
+        </div>
+    </div>
+
+    <!-- MODAL (INDICE) -->
+    <div id="custom-modal" class="hidden fixed inset-0 z-50 flex justify-center items-center p-4">
+        <div class="ninja-panel p-8 sm:p-10 max-w-md w-full transform transition-transform scale-95 slide-up-anim text-center">
+            <div class="text-6xl mb-6">📜</div>
+            <h3 class="text-3xl font-black text-slate-800 mb-4" id="modal-title">Parchemin d'aide</h3>
+            <p class="text-xl text-slate-600 font-bold mb-8 leading-relaxed" id="modal-content">Contenu</p>
+            <button onclick="closeModal()" class="game-btn w-full !min-h-[60px] !bg-rose-500 hover:!bg-rose-400 !border-slate-900 justify-center text-white !py-3 shadow-[0_5px_0_#0f172a]">
+                Fermer
+            </button>
+        </div>
+    </div>
+
+<script>
+    function createMathSVG(emoji, equation) {
+        const fontSize = equation.length > 10 ? 45 : 55; 
+        return `<svg viewBox="0 0 400 120">
+                    <text x="60" y="85" font-size="65" text-anchor="middle">${emoji}</text>
+                    <text x="230" y="80" font-size="${fontSize}" class="math-text" text-anchor="middle">${equation}</text>
+                </svg>`;
+    }
+
+    /*
+     * BASE DE DONNÉES AVEC STRATÉGIES
+     * Le champ "strategy" sera affiché APRÈS que l'élève ait répondu.
+     */
+    const questions = [
+        // --- MULTIPLICATIONS (jusqu'à 7) ---
+        {
+            text: "Calcule le produit suivant :",
+            hint: "Tu peux faire 4 bonds de 6, ou doubler 6 deux fois.",
+            strategy: "Technique du x4 : Double le nombre, puis double la réponse ! Le double de 6 est 12. Le double de 12 est 24.",
+            svg: createMathSVG("🐉", "4 × 6 = ?"),
+            options: [{ text: "24", isCorrect: true }, { text: "20", isCorrect: false }, { text: "28", isCorrect: false }, { text: "18", isCorrect: false }]
+        },
+        {
+            text: "Trouve la bonne réponse :",
+            hint: "La table de 5 est facile, elle finit toujours par 0 ou 5.",
+            strategy: "Technique du x5 : Compte par bonds de 5 (5, 10, 15, 20, 25, 30, 35) ou prends la moitié de 70 !",
+            svg: createMathSVG("⛩️", "7 × 5 = ?"),
+            options: [{ text: "35", isCorrect: true }, { text: "30", isCorrect: false }, { text: "40", isCorrect: false }, { text: "45", isCorrect: false }]
+        },
+        {
+            text: "Résous cette multiplication :",
+            hint: "C'est comme faire 7 + 7 + 7.",
+            strategy: "Technique du x3 : Fais le double (2x7 = 14) et ajoute encore une fois le nombre (14 + 7 = 21).",
+            svg: createMathSVG("🗡️", "3 × 7 = ?"),
+            options: [{ text: "21", isCorrect: true }, { text: "14", isCorrect: false }, { text: "24", isCorrect: false }, { text: "28", isCorrect: false }]
+        },
+        {
+            text: "Quel est ce produit ?",
+            hint: "C'est un nombre carré. Cherche la rime.",
+            strategy: "Astuce mémoire : Les nombres multipliés par eux-mêmes riment souvent. « Six fois six, trente-six ! »",
+            svg: createMathSVG("🥋", "6 × 6 = ?"),
+            options: [{ text: "36", isCorrect: true }, { text: "30", isCorrect: false }, { text: "42", isCorrect: false }, { text: "32", isCorrect: false }]
+        },
+        {
+            text: "Calcule l'opération :",
+            hint: "Tu peux utiliser la commutativité : 4 x 7 c'est pareil que 7 x 4.",
+            strategy: "Commutativité : Inverse les nombres dans ta tête si c'est plus facile pour toi (7x4 ou 4x7, ça donne 28).",
+            svg: createMathSVG("🏮", "7 × 4 = ?"),
+            options: [{ text: "28", isCorrect: true }, { text: "24", isCorrect: false }, { text: "32", isCorrect: false }, { text: "21", isCorrect: false }]
+        },
+        {
+            text: "Trouve la réponse :",
+            hint: "Connais-tu le truc magique de la table de 5 avec les nombres pairs ?",
+            strategy: "Technique experte du x5 avec un pair : Prends la moitié de 6 (c'est 3) et colle un zéro à côté ! Ça donne 30.",
+            svg: createMathSVG("🐅", "5 × 6 = ?"),
+            options: [{ text: "30", isCorrect: true }, { text: "25", isCorrect: false }, { text: "36", isCorrect: false }, { text: "35", isCorrect: false }]
+        },
+        // --- ADDITIONS MENTALES (< 100) ---
+        {
+            text: "Additionne ces nombres :",
+            hint: "Occupe-toi des dizaines ensemble, puis des unités ensemble.",
+            strategy: "Décomposition : Additionne les dizaines (40 + 30 = 70) puis les unités (5 + 2 = 7). Résultat : 77.",
+            svg: createMathSVG("🎋", "45 + 32 = ?"),
+            options: [{ text: "77", isCorrect: true }, { text: "87", isCorrect: false }, { text: "75", isCorrect: false }, { text: "67", isCorrect: false }]
+        },
+        {
+            text: "Trouve la somme :",
+            hint: "Tu peux ajouter 10 d'abord, puis ajouter le 4.",
+            strategy: "Découpage en bonds : Fais 58 + 10 = 68. Ensuite, ajoute le 4 qu'il reste pour arriver à 72.",
+            svg: createMathSVG("🏯", "58 + 14 = ?"),
+            options: [{ text: "72", isCorrect: true }, { text: "62", isCorrect: false }, { text: "82", isCorrect: false }, { text: "68", isCorrect: false }]
+        },
+        {
+            text: "Calcule rapidement :",
+            hint: "29 est TRÈS proche de 30. Utilise ça à ton avantage.",
+            strategy: "Arrondir et compenser : 29 c'est presque 30. Fais 30 + 35 = 65. Comme tu as ajouté 1 de trop, enlève 1. Résultat : 64.",
+            svg: createMathSVG("🌸", "29 + 35 = ?"),
+            options: [{ text: "64", isCorrect: true }, { text: "54", isCorrect: false }, { text: "65", isCorrect: false }, { text: "74", isCorrect: false }]
+        },
+        {
+            text: "Fais cette addition :",
+            hint: "Ne commence pas à compter à partir de 8, c'est trop long !",
+            strategy: "Commencer par le plus grand : Change l'ordre dans ta tête (47 + 8). Compte à partir de 47... 48, 49, 50, etc. Ça fait 55.",
+            svg: createMathSVG("⛩️", "8 + 47 = ?"),
+            options: [{ text: "55", isCorrect: true }, { text: "45", isCorrect: false }, { text: "65", isCorrect: false }, { text: "57", isCorrect: false }]
+        },
+        {
+            text: "Quel est le total ?",
+            hint: "19 c'est (20 - 1).",
+            strategy: "Ajouter presque 20 : Au lieu d'ajouter 19, ajoute 20 (76 + 20 = 96), puis recule de 1 pour arriver à 95.",
+            svg: createMathSVG("🐼", "76 + 19 = ?"),
+            options: [{ text: "95", isCorrect: true }, { text: "85", isCorrect: false }, { text: "96", isCorrect: false }, { text: "86", isCorrect: false }]
+        },
+        {
+            text: "Additionne :",
+            hint: "Remarque les doubles dans ce calcul.",
+            strategy: "Repérer les chiffres identiques : 3 dizaines + 4 dizaines = 70. 3 unités + 4 unités = 7. Facile ! Résultat : 77.",
+            svg: createMathSVG("🎯", "33 + 44 = ?"),
+            options: [{ text: "77", isCorrect: true }, { text: "67", isCorrect: false }, { text: "87", isCorrect: false }, { text: "74", isCorrect: false }]
+        },
+        // --- SOUSTRACTIONS MENTALES (< 100) ---
+        {
+            text: "Fais la soustraction :",
+            hint: "Il n'y a que des dizaines à enlever. Les unités ne changent pas.",
+            strategy: "Soustraire par position : 8 dizaines moins 2 dizaines font 6 dizaines. Le 5 reste pareil. Ça donne 65.",
+            svg: createMathSVG("⚔️", "85 - 20 = ?"),
+            options: [{ text: "65", isCorrect: true }, { text: "75", isCorrect: false }, { text: "55", isCorrect: false }, { text: "60", isCorrect: false }]
+        },
+        {
+            text: "Combien en reste-t-il ?",
+            hint: "Coupe le 15 en deux parties (10 et 5) pour l'enlever plus facilement.",
+            strategy: "Reculer par bonds : Fais 54 - 10 = 44. Ensuite, fais 44 - 5 (ou enlève 4 pour arriver à 40, puis encore 1) = 39.",
+            svg: createMathSVG("💨", "54 - 15 = ?"),
+            options: [{ text: "39", isCorrect: true }, { text: "49", isCorrect: false }, { text: "29", isCorrect: false }, { text: "41", isCorrect: false }]
+        },
+        {
+            text: "Calcule la différence :",
+            hint: "Enlever 19, c'est presque comme enlever 20.",
+            strategy: "Arrondir pour soustraire : Enlève 20 à 92 (il reste 72). Mais attention, tu as enlevé 1 de trop ! Redonne-lui 1 pour faire 73.",
+            svg: createMathSVG("🏯", "92 - 19 = ?"),
+            options: [{ text: "73", isCorrect: true }, { text: "83", isCorrect: false }, { text: "71", isCorrect: false }, { text: "81", isCorrect: false }]
+        },
+        {
+            text: "Soustrais ces nombres :",
+            hint: "Enlève d'abord le 20. Puis occupe-toi du 8.",
+            strategy: "Enlever dizaines puis unités : 60 - 20 = 40. Ensuite, il suffit de faire 40 - 8, ce qui donne 32.",
+            svg: createMathSVG("🏮", "60 - 28 = ?"),
+            options: [{ text: "32", isCorrect: true }, { text: "42", isCorrect: false }, { text: "22", isCorrect: false }, { text: "40", isCorrect: false }]
+        },
+        {
+            text: "Trouve le reste :",
+            hint: "Sépare l'opération : dizaines avec dizaines, unités avec unités.",
+            strategy: "Soustraction directe : 70 - 30 = 40. Et 7 - 3 = 4. Pas besoin d'emprunter, le résultat est directement 44.",
+            svg: createMathSVG("🥷", "77 - 33 = ?"),
+            options: [{ text: "44", isCorrect: true }, { text: "34", isCorrect: false }, { text: "54", isCorrect: false }, { text: "40", isCorrect: false }]
+        },
+        {
+            text: "Quelle est la différence ?",
+            hint: "Ces deux nombres sont très proches. Tu peux additionner au lieu de soustraire !",
+            strategy: "Compter vers l'avant : Pars de 38 pour aller jusqu'à 45. 38 + 2 = 40. Puis 40 + 5 = 45. L'écart (2+5) est 7 !",
+            svg: createMathSVG("🐉", "45 - 38 = ?"),
+            options: [{ text: "7", isCorrect: true }, { text: "13", isCorrect: false }, { text: "17", isCorrect: false }, { text: "5", isCorrect: false }]
+        },
+        // --- MÉLANGÉS (Bonus) ---
+        {
+            text: "Défi Ninja :",
+            hint: "7 fois 7. Le résultat est tout près de 50.",
+            strategy: "Le carré magique : 7 x 7 = 49. C'est l'un des carrés les plus célèbres, juste avant 50 !",
+            svg: createMathSVG("🌟", "7 × 7 = ?"),
+            options: [{ text: "49", isCorrect: true }, { text: "42", isCorrect: false }, { text: "56", isCorrect: false }, { text: "45", isCorrect: false }]
+        },
+        {
+            text: "Dernier défi mental :",
+            hint: "55 + 20... puis ajoute 6.",
+            strategy: "Passer la dizaine : Fais 55 + 20 = 75. Ensuite 75 + 5 = 80, et il te reste 1 à ajouter = 81.",
+            svg: createMathSVG("⛩️", "55 + 26 = ?"),
+            options: [{ text: "81", isCorrect: true }, { text: "71", isCorrect: false }, { text: "91", isCorrect: false }, { text: "85", isCorrect: false }]
+        }
+    ];
+
+    let currentIndex = 0;
+    let score = 0;
+    let isSoundEnabled = true;
+    let isAnswering = false;
+    let shuffledQuestions = [];
+
+    // Synthèse sonore au ton plus "asiatique / pentatonique"
+    const synth = new Tone.PolySynth(Tone.Synth).toDestination();
+    synth.volume.value = -8;
+
+    function playSound(type) {
+        if (!isSoundEnabled) return;
+        if (Tone.context.state !== 'running') Tone.context.resume();
+
+        const now = Tone.now();
+        if (type === 'correct') {
+            // Notes rapides et claires
+            synth.triggerAttackRelease(["C5", "D5", "G5"], "16n", now);
+        } else if (type === 'wrong') {
+            // Son grave et sec
+            synth.triggerAttackRelease(["C3"], "8n", now);
+        } else if (type === 'win') {
+            // Gamme pentatonique montante
+            synth.triggerAttackRelease("C4", "8n", now);
+            synth.triggerAttackRelease("D4", "8n", now + 0.15);
+            synth.triggerAttackRelease("E4", "8n", now + 0.3);
+            synth.triggerAttackRelease("G4", "8n", now + 0.45);
+            synth.triggerAttackRelease("A4", "8n", now + 0.6);
+            synth.triggerAttackRelease("C5", "2n", now + 0.75);
+        }
+    }
+
+    function toggleSound() {
+        isSoundEnabled = !isSoundEnabled;
+        document.getElementById('sound-btn').innerText = isSoundEnabled ? '🔊' : '🔇';
+    }
+
+    function shuffleArray(array) {
+        for (let i = array.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [array[i], array[j]] = [array[j], array[i]];
+        }
+        return array;
+    }
+
+    async function startGame() {
+        if (Tone.context.state !== 'running') await Tone.start();
+        document.getElementById('start-screen').classList.add('hidden');
+        document.getElementById('game-screen').classList.remove('hidden');
+        
+        shuffledQuestions = shuffleArray([...questions]);
+        currentIndex = 0;
+        score = 0;
+        updateScore();
+        loadQuestion();
+    }
+
+    function loadQuestion() {
+        isAnswering = false;
+        const q = shuffledQuestions[currentIndex];
+        
+        // Cacher le panneau de stratégie et réactiver les boutons
+        const strategyPanel = document.getElementById('strategy-panel');
+        strategyPanel.classList.remove('show');
+        
+        const answersGrid = document.getElementById('answers-grid');
+        answersGrid.style.display = 'grid'; // S'assurer qu'il est visible
+
+        document.getElementById('question-number').innerText = currentIndex + 1;
+        document.getElementById('progress-bar').style.width = `${((currentIndex) / questions.length) * 100}%`;
+        
+        document.getElementById('question-text').innerText = q.text;
+        document.getElementById('visual-container').innerHTML = q.svg;
+        
+        const panel = document.getElementById('question-panel');
+        panel.classList.remove('slide-up-anim');
+        void panel.offsetWidth; // Reflow
+        panel.classList.add('slide-up-anim');
+
+        answersGrid.innerHTML = '';
+        
+        const options = shuffleArray([...q.options]);
+        const letters = ['A', 'B', 'C', 'D'];
+        
+        options.forEach((opt, index) => {
+            const btn = document.createElement('button');
+            btn.className = 'game-btn slide-up-anim';
+            btn.style.animationDelay = `${index * 0.05}s`;
+            btn.dataset.answerText = opt.text;
+            
+            btn.innerHTML = `
+                <div class="choice-letter font-black">${letters[index]}</div> 
+                <span class="flex-1 text-center font-black">${opt.text}</span>
+            `;
+            
+            btn.onclick = () => handleAnswer(opt.isCorrect, btn);
+            answersGrid.appendChild(btn);
+        });
+    }
+
+    function handleAnswer(isCorrect, btnElement) {
+        if (isAnswering) return;
+        isAnswering = true;
+
+        const allButtons = document.querySelectorAll('#answers-grid .game-btn');
+        allButtons.forEach(b => b.disabled = true);
+
+        if (isCorrect) {
+            playSound('correct');
+            btnElement.classList.add('btn-correct');
+            score++;
+            updateScore();
+        } else {
+            playSound('wrong');
+            btnElement.classList.add('btn-wrong');
+            
+            // Montrer la bonne réponse
+            allButtons.forEach(b => {
+                if (b.dataset.answerText === shuffledQuestions[currentIndex].options.find(o => o.isCorrect).text) {
+                    b.classList.add('btn-correct');
+                }
+            });
+        }
+
+        // AU LIEU DE PASSER À LA QUESTION SUIVANTE AUTOMATIQUEMENT :
+        // On affiche le panneau de stratégie après un court délai pour laisser voir les couleurs
+        setTimeout(() => {
+            showStrategyPanel();
+        }, 800);
+    }
+
+    function showStrategyPanel() {
+        const q = shuffledQuestions[currentIndex];
+        document.getElementById('strategy-text').innerText = q.strategy;
+        
+        const strategyPanel = document.getElementById('strategy-panel');
+        strategyPanel.classList.add('show');
+        
+        // Optionnel : Faire scroller la fenêtre doucement vers le panneau de stratégie si écran petit
+        strategyPanel.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
+
+    function nextQuestion() {
+        currentIndex++;
+        if (currentIndex < questions.length) {
+            loadQuestion();
+        } else {
+            endGame();
+        }
+    }
+
+    function updateScore() {
+        document.getElementById('score-display').innerText = score;
+    }
+
+    function showHint() {
+        if (isAnswering) return; // Pas d'indice si la réponse a déjà été donnée
+        const q = shuffledQuestions[currentIndex];
+        document.getElementById('modal-content').innerText = q.hint;
+        document.getElementById('custom-modal').classList.remove('hidden');
+    }
+
+    function closeModal() {
+        document.getElementById('custom-modal').classList.add('hidden');
+    }
+
+    function endGame() {
+        document.getElementById('game-screen').classList.add('hidden');
+        document.getElementById('end-screen').classList.remove('hidden');
+        document.getElementById('progress-bar').style.width = `100%`;
+        
+        playSound('win');
+        startConfetti();
+        
+        const finalScore = document.getElementById('final-score');
+        finalScore.innerText = `${score} / ${questions.length}`;
+        
+        const feedback = document.getElementById('feedback-msg');
+        const stars = document.getElementById('stars-container');
+        
+        let percentage = score / questions.length;
+        if (percentage >= 0.9) {
+            feedback.innerText = "Parfait ! Tu as atteint le rang de Grand Maître Ninja des mathématiques !";
+            stars.innerHTML = "⭐⭐⭐";
+        } else if (percentage >= 0.6) {
+            feedback.innerText = "Très bien ! Tu maîtrises bien tes techniques. Encore un peu d'entraînement !";
+            stars.innerHTML = "⭐⭐";
+        } else {
+            feedback.innerText = "La voie du Ninja est longue. Relis bien les stratégies et réessaie !";
+            stars.innerHTML = "⭐";
+        }
+    }
+
+    function startConfetti() {
+        const canvas = document.getElementById('confetti-canvas');
+        const ctx = canvas.getContext('2d');
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+
+        let particles = [];
+        const colors = ['#e11d48', '#fbbf24', '#10b981', '#3b82f6', '#0f172a'];
+
+        for(let i=0; i<150; i++) {
+            particles.push({
+                x: Math.random() * canvas.width,
+                y: Math.random() * canvas.height - canvas.height,
+                w: Math.random() * 10 + 5,
+                h: Math.random() * 10 + 5,
+                c: colors[Math.floor(Math.random() * colors.length)],
+                dy: Math.random() * 3 + 2,
+                dx: Math.random() * 2 - 1,
+                rot: Math.random() * 360,
+                rs: Math.random() * 5 - 2.5
+            });
+        }
+
+        function render() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            particles.forEach(p => {
+                p.y += p.dy;
+                p.x += p.dx;
+                p.rot += p.rs;
+
+                if (p.y > canvas.height) p.y = -10;
+                if (p.x > canvas.width) p.x = 0;
+                if (p.x < 0) p.x = canvas.width;
+
+                ctx.save();
+                ctx.translate(p.x + p.w/2, p.y + p.h/2);
+                ctx.rotate(p.rot * Math.PI / 180);
+                ctx.fillStyle = p.c;
+                // Dessiner des étoiles ninja (shurikens simplifiés) ou des carrés
+                ctx.fillRect(-p.w/2, -p.h/2, p.w, p.h);
+                ctx.restore();
+            });
+            requestAnimationFrame(render);
+        }
+        render();
+
+        window.addEventListener('resize', () => {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+        });
+    }
+</script>
+</body>
+</html>
